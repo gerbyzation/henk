@@ -95,8 +95,10 @@ void handShake() {
   }
   delay(2000);
   openHand();
+  Serial.println("shaking");
   closed = false;
   delay(5000);
+  
 }
 
 void closeHand() {

@@ -1,13 +1,16 @@
-/* Sweep
- by BARRAGAN <http://barraganstudio.com>
- This example code is in the public domain.
-
- modified 8 Nov 2013
- by Scott Fitzgerald
- http://www.arduino.cc/en/Tutorial/Sweep
-*/
-
 #include <Servo.h>
+#include <CapacitiveSensor.h>
+
+long time = 0;
+int state = HIGH;
+
+boolean detection;
+boolean previous = false;
+
+int debounce = 200;
+int nDetects;
+
+CapacitiveSensor cs_4_2 = CapacitiveSensor(4, 2);
 
 Servo servos[4];
 int servoPins[4] = {9, 8, 7, 6};
@@ -18,33 +21,68 @@ int ledPin = 13;
 // 4 is middle finger
 
 int anglesClosed[4] = {90, 90, 90, 100};
-int anglesHandShake[4] = {60, 60, 60, 70};
+int anglesHandShake[4] = {70, 70, 70, 80};
 
 bool closed = false;
 
 int pos = 0;    // variable to store the servo position
 
-long time = 0;
-long debounce = 200;
-
 void setup() {
+  Serial.begin(9600);
+  cs_4_2.set_CS_AutocaL_Millis(0xFFFFFFFF);  //Calibrate the sensor... 
+  Serial.println("setup done");
+  
   for (int i = 0; i < 4; i++) {
     servos[i].attach(servoPins[i]);
   }
   pinMode(ledPin, OUTPUT);
+
+  // reset to open hand position
+  openHand();
 }
 
 void loop() {
-  openHand();
-  delay(5000);
-  if (!closed) {
+  // Take reading and count detections in sequence
+  long sensorReading = cs_4_2.capacitiveSensor(30);
+  if (sensorReading > 60) {
+    detection = true;
+    nDetects++;
+  } else {
+    detection = false;
+    nDetects = 0;
+  }
+
+  // stuff to control LED
+  if(detection == true  && millis() - time>debounce) {
+    if(state == LOW) {
+      state = HIGH;
+    } else {
+//       state = LOW;
+       time = millis();     
+    }
+  } else {
+    state = LOW;
+  }
+
+  digitalWrite(ledPin, state);
+  previous = detection;
+
+  Serial.print("time ");
+  Serial.print(millis()-time);
+  Serial.print(" the other thing ");
+  Serial.print(detection);
+  Serial.print(" detects ");
+  Serial.println(nDetects);
+
+  
+  if (!closed && nDetects > 25) {
     handShake();
     closed = true;
   } else {
     openHand();
   }
-  delay(3000);
-//  handShake();
+
+  delay(10);
 }
 
 void handShake() {
@@ -53,6 +91,8 @@ void handShake() {
   }
   delay(2000);
   openHand();
+  delay(5000);
+  closed = false;
 }
 
 void closeHand() {

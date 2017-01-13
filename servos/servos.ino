@@ -24,13 +24,14 @@ int anglesClosed[4] = {90, 90, 90, 100};
 int anglesHandShake[4] = {70, 70, 70, 80};
 
 bool closed = false;
+bool locked = false;
 
 int pos = 0;    // variable to store the servo position
 
 void setup() {
   Serial.begin(9600);
   cs_4_2.set_CS_AutocaL_Millis(0xFFFFFFFF);  //Calibrate the sensor... 
-  Serial.println("setup done");
+//  Serial.println("setup done");
   
   for (int i = 0; i < 4; i++) {
     servos[i].attach(servoPins[i]);
@@ -42,6 +43,8 @@ void setup() {
 }
 
 void loop() {
+  readSerial();
+
   // Take reading and count detections in sequence
   long sensorReading = cs_4_2.capacitiveSensor(30);
   if (sensorReading > 60) {
@@ -67,19 +70,20 @@ void loop() {
   digitalWrite(ledPin, state);
   previous = detection;
 
-  Serial.print("time ");
-  Serial.print(millis()-time);
-  Serial.print(" the other thing ");
-  Serial.print(detection);
-  Serial.print(" detects ");
-  Serial.println(nDetects);
+//  Serial.print("time ");
+//  Serial.print(millis()-time);
+//  Serial.print(" the other thing ");
+//  Serial.print(sensorReading);
+//  Serial.print(" detects ");
+//  Serial.println(nDetects);
 
-  
-  if (!closed && nDetects > 25) {
-    handShake();
-    closed = true;
-  } else {
-    openHand();
+  if (!locked) {
+    if (!closed && nDetects > 25) {
+      handShake();
+      closed = true;
+    } else {
+      openHand();
+    }
   }
 
   delay(10);
@@ -91,8 +95,8 @@ void handShake() {
   }
   delay(2000);
   openHand();
-  delay(5000);
   closed = false;
+  delay(5000);
 }
 
 void closeHand() {
@@ -114,3 +118,22 @@ void rotate(int finger, int degrees) {
 
   servos[finger - 1].write(degrees);
 }
+
+void readSerial() {
+  if (Serial.available() > 0) {
+    String message = Serial.readStringUntil('\n');
+    if (message == "close") {
+      locked = true;
+      closeHand();
+      delay(200);
+    } else if (message == "open") {
+      locked = false;
+      openHand();
+      delay(200);
+    } else {
+      Serial.print("read ");
+      Serial.println(message);
+    }
+  }
+}
+

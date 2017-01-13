@@ -46,11 +46,11 @@ void loop() {
   digitalWrite(led, state);
   previous = yes;
 
-  Serial.print("time ");
-  Serial.print(millis()-time);
-  Serial.print(" the other thing ");
-  Serial.print(total1);
-  Serial.print(" detects ");
-  Serial.println(nDetects);
+//  Serial.print("time ");
+//  Serial.print(millis()-time);
+//  Serial.print(" the other thing ");
+//  Serial.print(total1);
+//  Serial.print(" detects ");
+//  Serial.println(nDetects);
   delay(10);
 }
